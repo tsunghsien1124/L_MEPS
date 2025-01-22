@@ -66,14 +66,15 @@ year.group.num <- length(year.group)
 year.combined.group <- c("1996-2013", "2014-2019")
 year.combined.group.name <- c("96-13", "14-19")
 year.combined.group.num <- length(year.combined.group)
-age.group <- c("20-34", "35-44", "45-54", "55-64", "65-74", "75+")
+# age.group <- c("20-34", "35-44", "45-54", "55-64", "65-74", "75+")
+age.group <- c("20-34", "35-44", "45-54", "55-64", "65+")
 age.group.num <- length(age.group)
 age.combined.group <- c("20-44", "45-64", "65+")
 age.combined.group.num <- length(age.combined.group)
 
 MEPS_all$ADJ_OOP_INC <- MEPS_all$ADJ_OOP / MEPS_all$INCOME
 
-inc.group.num <- 10
+inc.group.num <- 5
 inc.combined.group.num <- 4
 
 # Create auxiliary functions ---------------------------------------------------
@@ -121,10 +122,18 @@ MEPS_all$YEAR_CG <- cut(
 )
 MEPS_all %>% dplyr::count(YEAR_CG)
 
+# MEPS_all$AGE_G <- cut(
+#   MEPS_all$AGE,
+#   breaks = c(20, 34, 44, 54, 64, 74, Inf),
+#   labels = c('1', '2', '3', '4', '5', '6'),
+#   include.lowest = TRUE
+# )
+# MEPS_all %>% dplyr::count(AGE_G)
+
 MEPS_all$AGE_G <- cut(
   MEPS_all$AGE,
-  breaks = c(20, 34, 44, 54, 64, 74, Inf),
-  labels = c('1', '2', '3', '4', '5', '6'),
+  breaks = c(20, 34, 44, 54, 64, Inf),
+  labels = c('1', '2', '3', '4', '5'),
   include.lowest = TRUE
 )
 MEPS_all %>% dplyr::count(AGE_G)
@@ -249,6 +258,43 @@ dev.copy(
 )
 dev.off()
 
+# Share of Uninsured by Age (C) Group [Table] ----------------------------------
+results.NOINS.AGE_G_table.year_group <- c()
+results.NOINS.AGE_G_table.age_group <- c()
+results.NOINS.AGE_G_table.average <- c()
+for (year in seq(year.combined.group.num)) {
+  for (age in sequence(age.group.num)) {
+    results.NOINS.AGE_G_table.year_group <- c(results.NOINS.AGE_G_table.year_group,
+                                              year.combined.group[year])
+    results.NOINS.AGE_G_table.age_group <- c(results.NOINS.AGE_G_table.age_group, age.group[age])
+    data.temp <- MEPS_all[(MEPS_all$YEAR_CG == year) &
+                            (MEPS_all$AGE_G == age), ]
+    results.NOINS.AGE_G_table.average <- c(results.NOINS.AGE_G_table.average,
+                                           wtd.mean(data.temp$NOINS, data.temp$WGT))
+  }
+}
+rm(year, age, data.temp)
+gc()
+results.NOINS.AGE_G_table <- data.frame(
+  year = as.character(results.NOINS.AGE_G_table.year_group),
+  age_group = factor(results.NOINS.AGE_G_table.age_group),
+  average = results.NOINS.AGE_G_table.average * 100
+)
+rm(
+  results.NOINS.AGE_G_table.year_group,
+  results.NOINS.AGE_G_table.age_group,
+  results.NOINS.AGE_G_table.average
+)
+table_NOINS_AGE <- matrix(
+  round(results.NOINS.AGE_G_table$average, digits = 1),
+  ncol = age.group.num,
+  byrow = TRUE
+)
+rownames(table_NOINS_AGE) <- year.combined.group
+colnames(table_NOINS_AGE) <- age.group
+table_NOINS_AGE <- as.table(table_NOINS_AGE)
+table_NOINS_AGE
+
 # Share of Uninsured by Income (C) Group ---------------------------------------
 results.NOINS.INC_G.year <- c()
 results.NOINS.INC_G.inc_group <- c()
@@ -305,6 +351,42 @@ dev.copy(
 )
 dev.off()
 
+# Share of Uninsured by Income (C) Group [Table] -------------------------------
+results.NOINS.INC_G_table.year_group <- c()
+results.NOINS.INC_G_table.inc_group <- c()
+results.NOINS.INC_G_table.average <- c()
+for (year in seq(year.combined.group.num)) {
+  for (inc in sequence(inc.group.num)) {
+    results.NOINS.INC_G_table.year_group <- c(results.NOINS.INC_G_table.year_group,
+                                              year.combined.group[year])
+    results.NOINS.INC_G_table.inc_group <- c(results.NOINS.INC_G_table.inc_group, inc)
+    data.temp <- MEPS_all[(MEPS_all$YEAR_CG == year) &
+                            (MEPS_all$INCOME_G == inc), ]
+    results.NOINS.INC_G_table.average <- c(results.NOINS.INC_G_table.average,
+                                           wtd.mean(data.temp$NOINS, data.temp$WGT))
+  }
+}
+rm(year, inc, data.temp)
+gc()
+results.NOINS.INC_G_table <- data.frame(
+  year = as.character(results.NOINS.INC_G_table.year_group),
+  inc_group = factor(results.NOINS.INC_G_table.inc_group),
+  average = results.NOINS.INC_G_table.average * 100
+)
+rm(
+  results.NOINS.INC_G_table.year_group,
+  results.NOINS.INC_G_table.inc_group,
+  results.NOINS.INC_G_table.average
+)
+table_NOINS_INC <- matrix(
+  round(results.NOINS.INC_G_table$average, digits = 1),
+  ncol = inc.group.num,
+  byrow = TRUE
+)
+rownames(table_NOINS_INC) <- year.combined.group
+colnames(table_NOINS_INC) <- c(1:5)
+table_NOINS_INC <- as.table(table_NOINS_INC)
+table_NOINS_INC
 
 # OOP --------------------------------------------------------------------------
 # results.OOP_Mean <- c()
@@ -1316,6 +1398,80 @@ dev.copy(
 )
 dev.off()
 
+# Adjusted OOP to Income by (C)Year and (C)Income Group ------------------------------
+results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.year_group <- c()
+results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.age_group <- c()
+results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average_by_year_group <- c()
+results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average <- c()
+for (j in seq(inc.combined.group.num)) {
+  for (i in seq(year.combined.group.num)) {
+    results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.year_group <- c(results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.year_group,
+                                                             year.combined.group[i])
+    results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.age_group <- c(results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.age_group, j)
+    data.temp <- MEPS_all[MEPS_all$YEAR_CG == i, ]
+    data.temp <- data.temp[data.temp$INCOME_CG == j, ]
+    average_by_year_group_ <- wtd.mean(data.temp$ADJ_OOP, data.temp$WGT) / wtd.mean(data.temp$INCOME, data.temp$WGT)
+    results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average_by_year_group <- c(
+      results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average_by_year_group,
+      average_by_year_group_
+    )
+  }
+  data.temp <- MEPS_all[MEPS_all$INCOME_CG == j, ]
+  average_ <- wtd.mean(data.temp$ADJ_OOP, data.temp$WGT) / wtd.mean(data.temp$INCOME, data.temp$WGT)
+  results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average <- c(
+    results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average,
+    rep(average_, year.combined.group.num)
+  )
+}
+rm(i, j, data.temp, average_by_year_group_, average_)
+gc()
+results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG <- data.frame(
+  year_group = as.character(results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.year_group),
+  income_group = factor(results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.age_group),
+  average_by_year_group = results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average_by_year_group * 100,
+  average = results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average * 100
+)
+rm(
+  results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.year_group,
+  results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.age_group,
+  results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average_by_year_group,
+  results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG.average
+)
+gc()
+par(mar = c(0, 0, 0, 0))
+ggplot(
+  data = results.ADJ_OOP_to_INCOME_INC_CG_YEAR_CG,
+  aes(
+    x = income_group,
+    y = average_by_year_group,
+    group = year_group,
+    color = year_group
+  )
+) +
+  geom_line(linewidth = 1, aes(linetype = year_group)) +
+  geom_point(size = 3, aes(shape = year_group)) +
+  # scale_x_discrete(labels = age.group) +
+  theme(
+    legend.position = "top",
+    legend.key.width = unit(1.3, "cm"),
+    text = element_text(size = 18, family = "serif"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13)
+  ) +
+  labs(x = "Income group", y = "%")
+dev.copy(
+  pdf,
+  paste0(
+    getwd(),
+    "/figure/OOP_ADJ_mean_to_INCOME_by_INC_CG_YEAR_CG.pdf"
+  ),
+  width = figure.width,
+  height = figure.height + 0.5
+)
+dev.off()
+
 # Adjusted OOP to Income by Age Group and Insurance Status ---------------------
 results.ADJ_OOP_to_INCOME_AGE_G_INS.age_group <- c()
 results.ADJ_OOP_to_INCOME_AGE_G_INS.status <- c()
@@ -2029,6 +2185,154 @@ ggplot(
 dev.copy(
   pdf,
   paste0(getwd(), "/figure/OOP_ADJ_mean_to_INCOME_IQR_by_AGE.pdf"),
+  width = figure.width,
+  height = figure.height + 0.5
+)
+dev.off()
+
+# Adjusted OOP to Income by Quantiles, Year, and Income Group ------------------
+results.ADJ_OOP_to_INCOME_IQR_INC_G.year_group <- c()
+results.ADJ_OOP_to_INCOME_IQR_INC_G.age_group <- c()
+results.ADJ_OOP_to_INCOME_IQR_INC_G.average_by_year_group <- c()
+results.ADJ_OOP_to_INCOME_IQR_INC_G.average <- c()
+for (j in seq(inc.group.num)) {
+  for (i in seq(year.combined.group.num)) {
+    results.ADJ_OOP_to_INCOME_IQR_INC_G.year_group <- c(results.ADJ_OOP_to_INCOME_IQR_INC_G.year_group,
+                                                        year.combined.group[i])
+    results.ADJ_OOP_to_INCOME_IQR_INC_G.age_group <- c(results.ADJ_OOP_to_INCOME_IQR_INC_G.age_group, j)
+    data.temp <- MEPS_all[MEPS_all$YEAR_CG == i, ]
+    data.temp <- data.temp[data.temp$INCOME_G == j, ]
+    quatiles.temp.year <- Hmisc::wtd.quantile(data.temp$ADJ_OOP_INC,
+                                              weights = data.temp$WGT,
+                                              probs = c(.25, .75))
+    results.ADJ_OOP_to_INCOME_IQR_INC_G.average_by_year_group <- c(
+      results.ADJ_OOP_to_INCOME_IQR_INC_G.average_by_year_group,
+      quatiles.temp.year[2] - quatiles.temp.year[1]
+    )
+  }
+  data.temp <- MEPS_all[MEPS_all$INCOME_G == j, ]
+  quatiles.temp <- Hmisc::wtd.quantile(data.temp$ADJ_OOP_INC,
+                                       weights = data.temp$WGT,
+                                       probs = c(.25, .75))
+  results.ADJ_OOP_to_INCOME_IQR_INC_G.average <- c(
+    results.ADJ_OOP_to_INCOME_IQR_INC_G.average,
+    rep(quatiles.temp[2] - quatiles.temp[1], year.combined.group.num)
+  )
+}
+rm(i, j, data.temp, quatiles.temp.year, quatiles.temp)
+gc()
+results.ADJ_OOP_to_INCOME_IQR_INC_G <- data.frame(
+  year_group = as.character(results.ADJ_OOP_to_INCOME_IQR_INC_G.year_group),
+  age_group = factor(results.ADJ_OOP_to_INCOME_IQR_INC_G.age_group),
+  average_by_year_group = results.ADJ_OOP_to_INCOME_IQR_INC_G.average_by_year_group * 100,
+  average = results.ADJ_OOP_to_INCOME_IQR_INC_G.average * 100
+)
+rm(
+  results.ADJ_OOP_to_INCOME_IQR_INC_G.year_group,
+  results.ADJ_OOP_to_INCOME_IQR_INC_G.age_group,
+  results.ADJ_OOP_to_INCOME_IQR_INC_G.average_by_year_group,
+  results.ADJ_OOP_to_INCOME_IQR_INC_G.average
+)
+gc()
+par(mar = c(0, 0, 0, 0))
+ggplot(
+  data = results.ADJ_OOP_to_INCOME_IQR_INC_G,
+  aes(
+    x = age_group,
+    y = average_by_year_group,
+    group = year_group,
+    color = year_group
+  )
+) +
+  geom_line(linewidth = 1, aes(linetype = year_group)) +
+  geom_point(size = 3, aes(shape = year_group)) +
+  theme(
+    legend.position = "top",
+    legend.key.width = unit(1.3, "cm"),
+    text = element_text(size = 18, family = "serif"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13)
+  ) +
+  labs(x = "Income group", y = "%")
+dev.copy(
+  pdf,
+  paste0(getwd(), "/figure/OOP_ADJ_mean_to_INCOME_IQR_by_INC_G.pdf"),
+  width = figure.width,
+  height = figure.height + 0.5
+)
+dev.off()
+
+# Adjusted OOP to Income by Quantiles, Year, and (C)Income Group ------------------
+results.ADJ_OOP_to_INCOME_IQR_INC_CG.year_group <- c()
+results.ADJ_OOP_to_INCOME_IQR_INC_CG.age_group <- c()
+results.ADJ_OOP_to_INCOME_IQR_INC_CG.average_by_year_group <- c()
+results.ADJ_OOP_to_INCOME_IQR_INC_CG.average <- c()
+for (j in seq(inc.combined.group.num)) {
+  for (i in seq(year.combined.group.num)) {
+    results.ADJ_OOP_to_INCOME_IQR_INC_CG.year_group <- c(results.ADJ_OOP_to_INCOME_IQR_INC_CG.year_group,
+                                                         year.combined.group[i])
+    results.ADJ_OOP_to_INCOME_IQR_INC_CG.age_group <- c(results.ADJ_OOP_to_INCOME_IQR_INC_CG.age_group, j)
+    data.temp <- MEPS_all[MEPS_all$YEAR_CG == i, ]
+    data.temp <- data.temp[data.temp$INCOME_CG == j, ]
+    quatiles.temp.year <- Hmisc::wtd.quantile(data.temp$ADJ_OOP_INC,
+                                              weights = data.temp$WGT,
+                                              probs = c(.25, .75))
+    results.ADJ_OOP_to_INCOME_IQR_INC_CG.average_by_year_group <- c(
+      results.ADJ_OOP_to_INCOME_IQR_INC_CG.average_by_year_group,
+      quatiles.temp.year[2] - quatiles.temp.year[1]
+    )
+  }
+  data.temp <- MEPS_all[MEPS_all$INCOME_CG == j, ]
+  quatiles.temp <- Hmisc::wtd.quantile(data.temp$ADJ_OOP_INC,
+                                       weights = data.temp$WGT,
+                                       probs = c(.25, .75))
+  results.ADJ_OOP_to_INCOME_IQR_INC_CG.average <- c(
+    results.ADJ_OOP_to_INCOME_IQR_INC_CG.average,
+    rep(quatiles.temp[2] - quatiles.temp[1], year.combined.group.num)
+  )
+}
+rm(i, j, data.temp, quatiles.temp.year, quatiles.temp)
+gc()
+results.ADJ_OOP_to_INCOME_IQR_INC_CG <- data.frame(
+  year_group = as.character(results.ADJ_OOP_to_INCOME_IQR_INC_CG.year_group),
+  age_group = factor(results.ADJ_OOP_to_INCOME_IQR_INC_CG.age_group),
+  average_by_year_group = results.ADJ_OOP_to_INCOME_IQR_INC_CG.average_by_year_group * 100,
+  average = results.ADJ_OOP_to_INCOME_IQR_INC_CG.average * 100
+)
+rm(
+  results.ADJ_OOP_to_INCOME_IQR_INC_CG.year_group,
+  results.ADJ_OOP_to_INCOME_IQR_INC_CG.age_group,
+  results.ADJ_OOP_to_INCOME_IQR_INC_CG.average_by_year_group,
+  results.ADJ_OOP_to_INCOME_IQR_INC_CG.average
+)
+gc()
+par(mar = c(0, 0, 0, 0))
+ggplot(
+  data = results.ADJ_OOP_to_INCOME_IQR_INC_CG,
+  aes(
+    x = age_group,
+    y = average_by_year_group,
+    group = year_group,
+    color = year_group
+  )
+) +
+  geom_line(linewidth = 1, aes(linetype = year_group)) +
+  geom_point(size = 3, aes(shape = year_group)) +
+  theme(
+    legend.position = "top",
+    legend.key.width = unit(1.3, "cm"),
+    text = element_text(size = 18, family = "serif"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13)
+  ) +
+  labs(x = "Income group", y = "%")
+dev.copy(
+  pdf,
+  paste0(getwd(), "/figure/OOP_ADJ_mean_to_INCOME_IQR_by_INC_CG.pdf"),
   width = figure.width,
   height = figure.height + 0.5
 )
