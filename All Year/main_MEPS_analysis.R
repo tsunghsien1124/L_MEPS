@@ -8,6 +8,7 @@ theme_set(theme_bw())
 library(ggpattern)
 library(viridis)
 library(reldist)
+library(statar)
 
 # Data directory----------------------------------------------------------------
 username <- "user" # "Tsung-Hsien Li"
@@ -783,12 +784,16 @@ for (year in years) {
   ADJ_OOP_INS_avg <- wtd.mean(data.temp$ADJ_OOP, data.temp$WGT)
   results.ADJ_OOP_INCOME_INS.average <- c(results.ADJ_OOP_INCOME_INS.average,
                                           ADJ_OOP_INS_avg / INCOME_avg)
-  ADJ_OOP_INS_avg <- wtd.mean(data.temp$ADJ_OOP * (1 - data.temp$NOINS),
-                              data.temp$WGT * (1 - data.temp$NOINS))
+  data.temp <- MEPS_all[MEPS_all$YEAR == year &
+                          MEPS_all$NOINS == 0, ]
+  INCOME_avg <- wtd.mean(data.temp$INCOME, data.temp$WGT)
+  ADJ_OOP_INS_avg <- wtd.mean(data.temp$ADJ_OOP, data.temp$WGT)
   results.ADJ_OOP_INCOME_INS.average <- c(results.ADJ_OOP_INCOME_INS.average,
                                           ADJ_OOP_INS_avg / INCOME_avg)
-  ADJ_OOP_INS_avg <- wtd.mean(data.temp$ADJ_OOP * data.temp$NOINS,
-                              data.temp$WGT * data.temp$NOINS)
+  data.temp <- MEPS_all[MEPS_all$YEAR == year &
+                          MEPS_all$NOINS == 1, ]
+  INCOME_avg <- wtd.mean(data.temp$INCOME, data.temp$WGT)
+  ADJ_OOP_INS_avg <- wtd.mean(data.temp$ADJ_OOP, data.temp$WGT)
   results.ADJ_OOP_INCOME_INS.average <- c(results.ADJ_OOP_INCOME_INS.average,
                                           ADJ_OOP_INS_avg / INCOME_avg)
   if (year == 1996) {
@@ -866,6 +871,110 @@ ggplot(data = results.ADJ_OOP_INCOME_INS, aes(
 dev.copy(
   pdf,
   paste0(getwd(), "/figure/OOP_ADJ_ratio_to_INCOME_by_INS.pdf"),
+  width = figure.width,
+  height = figure.height + 0.5
+)
+dev.off()
+
+# Adjusted OOP to Income by Insurance Status (Individual Average) --------------
+results.ADJ_OOP_INCOME_INS_IA.year <- c()
+results.ADJ_OOP_INCOME_INS_IA.status <- c()
+results.ADJ_OOP_INCOME_INS_IA.average <- c()
+results.ADJ_OOP_INCOME_INS_IA.ratio <- c()
+for (year in years) {
+  results.ADJ_OOP_INCOME_INS_IA.year <- c(results.ADJ_OOP_INCOME_INS_IA.year, rep(year, 3))
+  results.ADJ_OOP_INCOME_INS_IA.status <- c(results.ADJ_OOP_INCOME_INS_IA.status,
+                                            c("All", "Insured", "Uninsured"))
+  data.temp <- MEPS_all[MEPS_all$YEAR == year, ]
+  data.temp$ADJ_OOP_INC <- winsorize(data.temp$ADJ_OOP_INC, probs = c(0.0, 0.99))
+  ADJ_OOP_INC_INS_avg <- wtd.mean(data.temp$ADJ_OOP_INC, data.temp$WGT)
+  results.ADJ_OOP_INCOME_INS_IA.average <- c(results.ADJ_OOP_INCOME_INS_IA.average,
+                                             ADJ_OOP_INC_INS_avg)
+  ADJ_OOP_INC_INS_avg <- wtd.mean(
+    data.temp$ADJ_OOP_INC * (1.0 - data.temp$NOINS),
+    data.temp$WGT * (1.0 - data.temp$NOINS)
+  )
+  results.ADJ_OOP_INCOME_INS_IA.average <- c(results.ADJ_OOP_INCOME_INS_IA.average,
+                                             ADJ_OOP_INC_INS_avg)
+  ADJ_OOP_INC_INS_avg <- wtd.mean(data.temp$ADJ_OOP_INC * data.temp$NOINS,
+                                  data.temp$WGT * data.temp$NOINS)
+  results.ADJ_OOP_INCOME_INS_IA.average <- c(results.ADJ_OOP_INCOME_INS_IA.average,
+                                             ADJ_OOP_INC_INS_avg)
+  if (year == 1996) {
+    results.ADJ_OOP_INCOME_INS_IA.ratio <- c(results.ADJ_OOP_INCOME_INS_IA.ratio, rep(1, 3))
+  } else {
+    results.ADJ_OOP_INCOME_INS_IA.ratio <- c(
+      results.ADJ_OOP_INCOME_INS_IA.ratio,
+      results.ADJ_OOP_INCOME_INS_IA.average[(length(results.ADJ_OOP_INCOME_INS_IA.average) - 2):length(results.ADJ_OOP_INCOME_INS_IA.average)] /
+        results.ADJ_OOP_INCOME_INS_IA.average[1:3]
+    )
+  }
+}
+rm(year, data.temp, ADJ_OOP_INC_INS_avg)
+gc()
+results.ADJ_OOP_INCOME_INS_IA <- data.frame(
+  year = as.character(results.ADJ_OOP_INCOME_INS_IA.year),
+  status = factor(results.ADJ_OOP_INCOME_INS_IA.status),
+  average = results.ADJ_OOP_INCOME_INS_IA.average,
+  ratio = results.ADJ_OOP_INCOME_INS_IA.ratio
+)
+rm(
+  results.ADJ_OOP_INCOME_INS_IA.year,
+  results.ADJ_OOP_INCOME_INS_IA.status,
+  results.ADJ_OOP_INCOME_INS_IA.average,
+  results.ADJ_OOP_INCOME_INS_IA.ratio
+)
+gc()
+par(mar = c(0, 0, 0, 0))
+ggplot(data = results.ADJ_OOP_INCOME_INS_IA, aes(
+  x = year,
+  y = average * 100,
+  group = status,
+  color = status
+)) +
+  geom_line(linewidth = 1, aes(linetype = status)) +
+  geom_point(size = 3, aes(shape = status)) +
+  scale_x_discrete(breaks = year.break) +
+  theme(
+    legend.position = "top",
+    legend.key.width = unit(1.3, "cm"),
+    text = element_text(size = 18, family = "serif"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13)
+  ) +
+  labs(x = "Year", y = "%")
+dev.copy(
+  pdf,
+  paste0(getwd(), "/figure/OOP_ADJ_mean_to_INCOME_by_INS_IA.pdf"),
+  width = figure.width,
+  height = figure.height + 0.5
+)
+dev.off()
+par(mar = c(0, 0, 0, 0))
+ggplot(data = results.ADJ_OOP_INCOME_INS_IA, aes(
+  x = year,
+  y = ratio,
+  group = status,
+  color = status
+)) +
+  geom_line(linewidth = 1, aes(linetype = status)) +
+  geom_point(size = 3, aes(shape = status)) +
+  scale_x_discrete(breaks = year.break) +
+  theme(
+    legend.position = "top",
+    legend.key.width = unit(1.3, "cm"),
+    text = element_text(size = 18, family = "serif"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13)
+  ) +
+  labs(x = "Year", y = "")
+dev.copy(
+  pdf,
+  paste0(getwd(), "/figure/OOP_ADJ_ratio_to_INCOME_by_INS_IA.pdf"),
   width = figure.width,
   height = figure.height + 0.5
 )
