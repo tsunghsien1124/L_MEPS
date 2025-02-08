@@ -154,6 +154,55 @@ MEPS_all %>% dplyr::count(INCOME_G)
 MEPS_all$INCOME_CG <- wtd.quantcut(MEPS_all$INCOME, MEPS_all$WGT, inc.combined.group.num)
 MEPS_all %>% dplyr::count(INCOME_CG)
 
+# Share of Catastrophic Health Spending ----------------------------------------
+results.CHS.year <- c()
+results.CHS.status <- c()
+results.CHS.average <- c()
+for (year in years) {
+  results.CHS.year <- c(results.CHS.year, rep(year, 2))
+  results.CHS.status <- c(results.CHS.status, c("10%", "15%"))
+  data.temp <- MEPS_all[MEPS_all$YEAR == year, ]
+  CHS_avg_temp <- sum((data.temp$ADJ_OOP_INC >= 0.10) * data.temp$WGT) / sum(data.temp$WGT)
+  results.CHS.average <- c(results.CHS.average, CHS_avg_temp)
+  CHS_avg_temp <- sum((data.temp$ADJ_OOP_INC >= 0.15) * data.temp$WGT) / sum(data.temp$WGT)
+  results.CHS.average <- c(results.CHS.average, CHS_avg_temp)
+}
+rm(year, data.temp, CHS_avg_temp)
+gc()
+results.CHS <- data.frame(
+  year = as.character(results.CHS.year),
+  status = factor(results.CHS.status),
+  average = results.CHS.average * 100
+)
+rm(results.CHS.year,
+   results.CHS.status,
+   results.CHS.average)
+par(mar = c(0, 0, 0, 0))
+ggplot(data = results.CHS, aes(
+  x = year,
+  y = average,
+  group = status,
+  color = status
+)) +
+  geom_line(linewidth = 1, aes(linetype = status)) +
+  geom_point(size = 3, aes(shape = status)) +
+  theme(
+    legend.position = "top",
+    legend.key.width = unit(1.3, "cm"),
+    text = element_text(size = 18, family = "serif"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13)
+  ) +
+  labs(x = "Year", y = "%") +
+  scale_x_discrete(breaks = year.break)
+dev.copy(pdf,
+         paste0(dic_fig, "CHS_share.pdf"),
+         width = figure.width,
+         height = figure.height + 0.5)
+dev.off()
+
 # Share of Uninsured -----------------------------------------------------------
 results.NOINS.year <- c()
 results.NOINS.status <- c()
@@ -1501,6 +1550,82 @@ dev.copy(
   paste0(
     getwd(),
     "/figure/OOP_ADJ_mean_to_INCOME_by_INC_YEAR_CG.pdf"
+  ),
+  width = figure.width,
+  height = figure.height + 0.5
+)
+dev.off()
+
+# Adjusted OOP to Income by (C)Year and Income Group (65+) ---------------------
+results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.year_group <- c()
+results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.age_group <- c()
+results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average_by_year_group <- c()
+results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average <- c()
+for (j in seq(inc.group.num)) {
+  for (i in seq(year.combined.group.num)) {
+    results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.year_group <- c(results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.year_group,
+                                                            year.combined.group[i])
+    results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.age_group <- c(results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.age_group, j)
+    data.temp <- MEPS_all[MEPS_all$YEAR_CG == i, ]
+    data.temp <- data.temp[data.temp$INCOME_G == j, ]
+    data.temp <- data.temp[data.temp$AGE_G == 5, ]
+    average_by_year_group_ <- wtd.mean(data.temp$ADJ_OOP, data.temp$WGT) / wtd.mean(data.temp$INCOME, data.temp$WGT)
+    results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average_by_year_group <- c(
+      results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average_by_year_group,
+      average_by_year_group_
+    )
+  }
+  data.temp <- MEPS_all[MEPS_all$INCOME_G == j, ]
+  data.temp <- data.temp[data.temp$AGE_G == 5, ]
+  average_ <- wtd.mean(data.temp$ADJ_OOP, data.temp$WGT) / wtd.mean(data.temp$INCOME, data.temp$WGT)
+  results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average <- c(
+    results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average,
+    rep(average_, year.combined.group.num)
+  )
+}
+rm(i, j, data.temp, average_by_year_group_, average_)
+gc()
+results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65 <- data.frame(
+  year_group = as.character(results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.year_group),
+  income_group = factor(results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.age_group),
+  average_by_year_group = results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average_by_year_group * 100,
+  average = results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average * 100
+)
+rm(
+  results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.year_group,
+  results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.age_group,
+  results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average_by_year_group,
+  results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average
+)
+gc()
+par(mar = c(0, 0, 0, 0))
+ggplot(
+  data = results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65,
+  aes(
+    x = income_group,
+    y = average_by_year_group,
+    group = year_group,
+    color = year_group
+  )
+) +
+  geom_line(linewidth = 1, aes(linetype = year_group)) +
+  geom_point(size = 3, aes(shape = year_group)) +
+  # scale_x_discrete(labels = age.group) +
+  theme(
+    legend.position = "top",
+    legend.key.width = unit(1.3, "cm"),
+    text = element_text(size = 18, family = "serif"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13)
+  ) +
+  labs(x = "Income group", y = "%")
+dev.copy(
+  pdf,
+  paste0(
+    getwd(),
+    "/figure/OOP_ADJ_mean_to_INCOME_by_INC_YEAR_CG_65.pdf"
   ),
   width = figure.width,
   height = figure.height + 0.5
