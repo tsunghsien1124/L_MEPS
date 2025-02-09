@@ -174,9 +174,7 @@ results.CHS <- data.frame(
   status = factor(results.CHS.status),
   average = results.CHS.average * 100
 )
-rm(results.CHS.year,
-   results.CHS.status,
-   results.CHS.average)
+rm(results.CHS.year, results.CHS.status, results.CHS.average)
 par(mar = c(0, 0, 0, 0))
 ggplot(data = results.CHS, aes(
   x = year,
@@ -1564,7 +1562,7 @@ results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.average <- c()
 for (j in seq(inc.group.num)) {
   for (i in seq(year.combined.group.num)) {
     results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.year_group <- c(results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.year_group,
-                                                            year.combined.group[i])
+                                                               year.combined.group[i])
     results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.age_group <- c(results.ADJ_OOP_to_INCOME_INC_G_YEAR_CG_65.age_group, j)
     data.temp <- MEPS_all[MEPS_all$YEAR_CG == i, ]
     data.temp <- data.temp[data.temp$INCOME_G == j, ]
