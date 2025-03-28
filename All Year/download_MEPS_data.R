@@ -5,11 +5,7 @@ library(haven)
 
 # File directory ---------------------------------------------------------------
 username <- "user" # "Tsung-Hsien Li"
-setwd(paste0(
-  "C:/Users/",
-  username,
-  "/Desktop/Medical Uncertainty 1996-2020/All Year/"
-))
+setwd(paste0("C:/Users/", username, "/Documents/GitHub/L_MEPS/All Year/"))
 dic_data_raw <- paste0(getwd(), "/Raw Data/")
 dic_data_adj <- paste0(getwd(), "/Raw Data (Adjusted)/")
 
@@ -214,6 +210,17 @@ create_new_data <- function(years, dic, aggregate_data) {
       factor.OOP * dt[[paste0('TOTSLF', yr)]] +
       factor.BD * dt$NOINS * dt$DIFF
     
+    # Family ID
+    dt$DUIDFAMY <- paste(dt$DUID, dt$FAMIDYR, sep = "")
+    
+    # Select the appropriate family weight
+    if (year < 1999) {
+      dt$FAMYWGT <- dt[[paste0('WTFAMF', yr)]]
+    } else {
+      dt$FAMYWGT <- dt[[paste0('FAMWT', yr, 'F')]]
+    }
+
+    # Create new data 
     dt_new <- data.frame(
       YEAR = rep(year, dim(dt)[1]),
       WGT = dt$WGTNEW,
@@ -224,8 +231,12 @@ create_new_data <- function(years, dic, aggregate_data) {
       NOINS_all = dt$NOINS_all,
       DIFF = dt$DIFF,
       OOP = dt[[paste0('TOTSLF', yr)]],
-      ADJ_OOP = dt$ADJOOP
+      ADJ_OOP = dt$ADJOOP,
+      FAMYID = dt$DUIDFAMY,
+      FAMYREF = dt$FAMRFPYR,
+      FAMYWGT = dt$FAMYWGT
     )
+    
     # Save the new data
     saveRDS(dt_new, file = paste0(dic, 'MEPS_', year, '_new.RData'))
   }
